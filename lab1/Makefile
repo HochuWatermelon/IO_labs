@@ -1,4 +1,6 @@
-obj-m = ch_drv.o
+obj-m := DnB_driver.o
+DnB_driver-objs := ch_drv.o
+
 PWD = $(shell pwd)
 all:
 	make -C /lib/modules/$(shell uname -r)/build M="$(PWD)" modules
