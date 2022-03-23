@@ -48,11 +48,8 @@ static ssize_t my_write(struct file *f, const char __user *buf, size_t len,
   return len;
 }
 
-static struct file_operations proc_fops = {
+static struct file_operations my_fops = {
     .owner = THIS_MODULE, .read = my_read, .write = my_write};
-
-static struct file_operations dev_fops = {.read = my_read,
-                                              .write = my_write};
 
 static int mychardev_uevent(struct device *dev, struct kobj_uevent_env *env) {
   add_uevent_var(env, "DEVMODE=%#o", 0666);
@@ -87,7 +84,7 @@ static int __init ch_drv_init(void) {
     return -1;
   }
 
-  cdev_init(&c_dev, &dev_fops);
+  cdev_init(&c_dev, &my_fops);
   if (cdev_add(&c_dev, first, 1) == -1) {
     device_destroy(cl, first);
     class_destroy(cl);
@@ -95,7 +92,7 @@ static int __init ch_drv_init(void) {
     return -1;
   }
 
-  entry = proc_create("var1", 0666, NULL, &proc_fops);
+  entry = proc_create("var1", 0666, NULL, &my_fops);
   if (entry == NULL) {
     device_destroy(cl, first);
     class_destroy(cl);
