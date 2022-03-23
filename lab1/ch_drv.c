@@ -11,11 +11,15 @@
 #include <linux/types.h>
 #include <linux/uaccess.h>
 
+static dev_t first;
+static struct cdev c_dev;
+static struct class *cl;
+
 ssize_t input_char_len = 0;
 char *input_buff;
 static struct proc_dir_entry *entry;
 
-static ssize_t my_read(struct file *f, char __user *buf, size_t len,
+static ssize_t proc_read(struct file *f, char __user *buf, size_t len,
                        loff_t *off) {
 
   int count = strlen(input_buff);
@@ -32,10 +36,10 @@ static ssize_t my_read(struct file *f, char __user *buf, size_t len,
   return count;
 }
 
-static ssize_t my_write(struct file *f, const char __user *buf, size_t len,
+static ssize_t proc_write(struct file *f, const char __user *buf, size_t len,
                         loff_t *off) {
 
-  if(copy_from_user(input_buff, buf, len) != 0){
+  if (copy_from_user(input_buff, buf, len) != 0) {
     return -EFAULT;
   }
   input_char_len += len - 1;
@@ -44,30 +48,63 @@ static ssize_t my_write(struct file *f, const char __user *buf, size_t len,
   return len;
 }
 
-static struct file_operations mychdev_fops = {
+static ssize_t dev_read(struct file *f, char __user *buf, size_t len,
+                        loff_t *off) {
+  // TODO
+}
+
+static ssize_t dev_write(struct file *f, const char __user *buf, size_t len,
+                          loff_t *off) {
+  // TODO
+}
+
+static struct file_operations proc_fops = {
     .owner = THIS_MODULE,
-    .read = my_read,
-    .write = my_write
+    .read = proc_read,
+    .write = proc_write
+};
+
+static struct file_operations mychdev_fops = {
+    .read = dev_read,
+    .write = dev_write
 };
 
 static int __init ch_drv_init(void) {
   input_buff = (char *)kmalloc(1024, GFP_KERNEL);
   if (!input_buff) {
-      printk(KERN_ERR "%s:impossible to allocate memory\n", THIS_MODULE->name);
-      return -1;
+    printk(KERN_ERR "%s:impossible to allocate memory\n", THIS_MODULE->name);
+    return -1;
   }
   input_char_len = 0;
-  if(!memset(input_buff, 0, 1024)){
-      printk(KERN_ERR "%s:something went wrong\n", THIS_MODULE->name);
-      return -1;
+  if (!memset(input_buff, 0, 1024)) {
+    printk(KERN_ERR "%s:something went wrong\n", THIS_MODULE->name);
+    return -1;
   }
 
-  entry = proc_create("var1", 0666, NULL, &mychdev_fops);
+  // TODO: - init dev/var1
+  //       - alloc_chrdev_region
+  //       - class create
+  //       - device create
+  //       - device init
+
+  entry = proc_create("var1", 0666, NULL, &proc_fops);
+  if (entry == NULL) {
+    device_destroy(cl, first);
+    class_destroy(cl);
+    unregister_chrdev_region(first, 1);
+    return -1;
+  }
+
   printk(KERN_INFO "%s: proc file is created\n", THIS_MODULE->name);
   return 0;
 }
 
 static void __exit ch_drv_exit(void) {
+
+  // TODO: - del dev
+  //       - device destroy
+  //       - class destroy
+
   kfree(input_buff);
   proc_remove(entry);
   printk(KERN_INFO "%s: proc file is deleted\n", THIS_MODULE->name);
