@@ -39,6 +39,8 @@ static ssize_t my_read(struct file *f, char __user *buf, size_t len,
 static ssize_t my_write(struct file *f, const char __user *buf, size_t len,
                           loff_t *off) {
 
+  input_char_len = 0;                          
+
   if (copy_from_user(input_buff, buf, len) != 0) {
     return -EFAULT;
   }
