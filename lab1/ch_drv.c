@@ -19,7 +19,7 @@ ssize_t input_char_len = 0;
 char *input_buff;
 static struct proc_dir_entry *entry;
 
-static ssize_t proc_read(struct file *f, char __user *buf, size_t len,
+static ssize_t my_read(struct file *f, char __user *buf, size_t len,
                          loff_t *off) {
 
   int count = strlen(input_buff);
@@ -36,7 +36,7 @@ static ssize_t proc_read(struct file *f, char __user *buf, size_t len,
   return count;
 }
 
-static ssize_t proc_write(struct file *f, const char __user *buf, size_t len,
+static ssize_t my_write(struct file *f, const char __user *buf, size_t len,
                           loff_t *off) {
 
   if (copy_from_user(input_buff, buf, len) != 0) {
@@ -48,28 +48,11 @@ static ssize_t proc_write(struct file *f, const char __user *buf, size_t len,
   return len;
 }
 
-static ssize_t dev_read(struct file *f, char __user *buf, size_t len,
-                        loff_t *off) {
-
-  // TODO: read from /dev/var1
-
-  printk(KERN_INFO "This is %s \n", __FUNCTION__);
-  return 0;
-}
-
-static ssize_t dev_write(struct file *f, const char __user *buf, size_t len,
-                         loff_t *off) {
-  // TODO: write to /dev/var1
-
-  printk(KERN_INFO "This is %s \n", __FUNCTION__);
-  return len;
-}
-
 static struct file_operations proc_fops = {
-    .owner = THIS_MODULE, .read = proc_read, .write = proc_write};
+    .owner = THIS_MODULE, .read = my_read, .write = my_write};
 
-static struct file_operations mychdev_fops = {.read = dev_read,
-                                              .write = dev_write};
+static struct file_operations dev_fops = {.read = my_read,
+                                              .write = my_write};
 
 static int mychardev_uevent(struct device *dev, struct kobj_uevent_env *env) {
   add_uevent_var(env, "DEVMODE=%#o", 0666);
@@ -88,29 +71,23 @@ static int __init ch_drv_init(void) {
     return -1;
   }
 
-  // TODO: - init dev/var1
-  //       - alloc_chrdev_region
-  //       - class create
-  //       - device create
-  //       - device init
-  // |
-  // | I guess it's done, but some review needed
-  // v
-
   if (alloc_chrdev_region(&first, 0, 1, "ch_dev") < 0) {
     return -1;
   }
+
   if ((cl = class_create(THIS_MODULE, "chardrv")) == NULL) {
     unregister_chrdev_region(first, 1);
     return -1;
   }
+
   cl->dev_uevent = mychardev_uevent;
   if (device_create(cl, NULL, first, NULL, "var1") == NULL) {
     class_destroy(cl);
     unregister_chrdev_region(first, 1);
     return -1;
   }
-  cdev_init(&c_dev, &mychdev_fops);
+
+  cdev_init(&c_dev, &dev_fops);
   if (cdev_add(&c_dev, first, 1) == -1) {
     device_destroy(cl, first);
     class_destroy(cl);
@@ -128,18 +105,11 @@ static int __init ch_drv_init(void) {
 
   printk(KERN_INFO "%s: dev file is created\n", THIS_MODULE->name);
   printk(KERN_INFO "%s: proc file is created\n", THIS_MODULE->name);
+
   return 0;
 }
 
 static void __exit ch_drv_exit(void) {
-
-  // TODO: - del dev
-  //       - device destroy
-  //       - class destroy
-  // |
-  // | I guess it's done, but some review needed
-  // v
-
   cdev_del(&c_dev);
   device_destroy(cl, first);
   class_destroy(cl);
