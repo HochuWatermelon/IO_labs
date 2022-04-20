@@ -40,24 +40,25 @@ int results[RESULTS_BUF_SIZE];
 int result_sp = 0;
 
 static ssize_t proc_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos) {
-    return -1;
+return -1;
 }
 
 static ssize_t proc_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos) {
-    int i, offset = 0;
+int i, offset = 0;
 
-    for (i = 0; i < RESULTS_BUF_SIZE; i++)
-        if (results[i] != INT_MIN)
-            offset += sprintf(result_str_buffer + offset, "result #num=%d #value=%d\n", i, results[i]);
+for (i = 0; i < RESULTS_BUF_SIZE; i++)
+if (results[i] != INT_MIN) {
+offset += sprintf(result_str_buffer + offset, "result #num=%d #value=%d\n", i, results[i]);
+pr_info("result #num=%d #value=%d\n", i, results[i]);
+}
+if (*ppos > 0 || count < offset)
+return 0;
 
-    if (*ppos > 0 || count < offset)
-        return 0;
+if (copy_to_user(ubuf, result_str_buffer, offset) != 0)
+return -EFAULT;
 
-    if (copy_to_user(ubuf, result_str_buffer, offset) != 0)
-        return -EFAULT;
-
-    *ppos = offset;
-    return offset;
+*ppos = offset;
+return offset;
 }
 
 static struct proc_ops fops = {
@@ -76,51 +77,54 @@ static int dev_release(struct inode *inode, struct file *file) {
 }
 
 static ssize_t dev_read(struct file *filp, char __user *buf, size_t len, loff_t *off) {
-    int i, offset = 0;
+int i, offset = 0;
 
-    for (i = 0; i < RESULTS_BUF_SIZE; i++)
-        if (results[i] != INT_MIN)
-            offset += sprintf(result_str_buffer + offset, "result #num=%d #value=%d\n", i, results[i]);
+for (i = 0; i < RESULTS_BUF_SIZE; i++)
+if (results[i] != INT_MIN) {
+offset += sprintf(result_str_buffer + offset, "result #num=%d #value=%d\n", i, results[i]);
+pr_info("result #num=%d #value=%d\n", i, results[i]);
+}
 
-    if (*off > 0 || len < offset)
-        return 0;
+if (*off > 0 || len < offset)
+return 0;
 
-    if (copy_to_user(buf, result_str_buffer, offset) != 0)
-        return -EFAULT;
-    *off = offset;
-    return offset;
+if (copy_to_user(buf, result_str_buffer, offset) != 0)
+return -EFAULT;
+*off = offset;
+return offset;
 }
 
 static ssize_t dev_write(struct file *filp, const char __user *buf, size_t len, loff_t *off) {
-    size_t i;
-    int sum = 0;
-    int last_pos_start = -1;
+size_t i;
+int sum = 0;
+int last_pos_start = -1;
 
-    if (copy_from_user(input_buffer, buf, len)) {
-        pr_err("Data Write : Err!\n");
-    }
+if (copy_from_user(input_buffer, buf, len)) {
+pr_err("Data Write : Err!\n");
+return -EFAULT;
+}
 
-    for (i = 0; i < len; i++) {
-        if (input_buffer[i] >= '0' && input_buffer[i] <= '9' && last_pos_start == -1) {
-            last_pos_start = i;
-        }
-        if ((input_buffer[i] < '0' || input_buffer[i] > '9') && last_pos_start != -1) {
-            input_buffer[i] = '\0';
-            sum += atoi(input_buffer + last_pos_start);
-            last_pos_start = -1;
-        }
-    }
-    pr_info("Data wrote: result %d!\n", sum);
-    if (result_sp == RESULTS_BUF_SIZE) {
-        for (i = 0; i < RESULTS_BUF_SIZE - 1; i++) {
-            results[i] = results[i + 1];
-        }
-        results[RESULTS_BUF_SIZE - 1] = sum;
-        result_sp--;
-    } else {
-        results[result_sp++] = sum;
-    }
-    return len;
+for (i = 0; i < len; i++) {
+if (input_buffer[i] >= '0' && input_buffer[i] <= '9' && last_pos_start == -1) {
+last_pos_start = i;
+}
+if ((input_buffer[i] < '0' || input_buffer[i] > '9') && last_pos_start != -1) {
+input_buffer[i] = '\0';
+sum += atoi(input_buffer + last_pos_start);
+last_pos_start = -1;
+}
+}
+pr_info("Data wrote: result %d!\n", sum);
+if (result_sp == RESULTS_BUF_SIZE) {
+for (i = 0; i < RESULTS_BUF_SIZE - 1; i++) {
+results[i] = results[i + 1];
+}
+results[RESULTS_BUF_SIZE - 1] = sum;
+result_sp--;
+} else {
+results[result_sp++] = sum;
+}
+return len;
 }
 
 static struct file_operations devfops = {
@@ -168,9 +172,12 @@ static int __init proc_example_init(void) {
     return 0;
 
     r_device:
-        class_destroy(dev_class);
+    class_destroy(dev_class);
     r_class:
-        unregister_chrdev_region(dev, 1);
+    unregister_chrdev_region(dev, 1);
+
+    kfree(result_str_buffer);
+    kfree(input_buffer);
     return -1;
 }
 
