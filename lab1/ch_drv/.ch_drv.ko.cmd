@@ -1,0 +1,1 @@
+cmd_/home/omgronny/d/CSE3rdyear/io/lab1/ch_drv/ch_drv.ko := ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T scripts/module.lds -o /home/omgronny/d/CSE3rdyear/io/lab1/ch_drv/ch_drv.ko /home/omgronny/d/CSE3rdyear/io/lab1/ch_drv/ch_drv.o /home/omgronny/d/CSE3rdyear/io/lab1/ch_drv/ch_drv.mod.o;  true
