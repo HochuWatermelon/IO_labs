@@ -6,6 +6,7 @@
 #include <linux/fs.h>
 #include <linux/device.h>
 #include <linux/cdev.h>
+#include <linux/slab.h>
 
 static dev_t first;
 static struct cdev c_dev; 
@@ -13,13 +14,14 @@ static struct class *cl;
 
 struct ListNode {
   int value;
-  ListNode* next;
+  struct ListNode* next;
 };
 
-ListNode* push_front(ListNode* head, int value) {
-  ListNode* new_node = (ListNode*) kmalloc(sizeof(head));
+struct ListNode* push_front(struct ListNode* head, int value) {
+  struct ListNode* new_node = (struct ListNode*) kmalloc(sizeof(struct ListNode), GFP_KERNEL);
   new_node->value = value;
   new_node->next = head;
+  return new_node;
 }
 
 

@@ -1,1 +1,1 @@
-cmd_/home/omgronny/d/CSE3rdyear/io/lab1/ch_drv/Module.symvers := sed 's/ko$$/o/' /home/omgronny/d/CSE3rdyear/io/lab1/ch_drv/modules.order | scripts/mod/modpost  -a   -o /home/omgronny/d/CSE3rdyear/io/lab1/ch_drv/Module.symvers -e -i Module.symvers  -N -T -
+cmd_/home/omgronny/d/CSE3rdyear/io/report-skeleton/lab1/ch_drv/Module.symvers := sed 's/ko$$/o/' /home/omgronny/d/CSE3rdyear/io/report-skeleton/lab1/ch_drv/modules.order | scripts/mod/modpost  -a   -o /home/omgronny/d/CSE3rdyear/io/report-skeleton/lab1/ch_drv/Module.symvers -e -i Module.symvers  -N -T -

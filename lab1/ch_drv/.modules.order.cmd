@@ -1,1 +1,1 @@
-cmd_/home/omgronny/d/CSE3rdyear/io/lab1/ch_drv/modules.order := {   echo /home/omgronny/d/CSE3rdyear/io/lab1/ch_drv/ch_drv.ko; :; } | awk '!x[$$0]++' - > /home/omgronny/d/CSE3rdyear/io/lab1/ch_drv/modules.order
+cmd_/home/omgronny/d/CSE3rdyear/io/report-skeleton/lab1/ch_drv/modules.order := {   echo /home/omgronny/d/CSE3rdyear/io/report-skeleton/lab1/ch_drv/ch_drv.ko; :; } | awk '!x[$$0]++' - > /home/omgronny/d/CSE3rdyear/io/report-skeleton/lab1/ch_drv/modules.order
