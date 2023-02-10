@@ -11,6 +11,18 @@ static dev_t first;
 static struct cdev c_dev; 
 static struct class *cl;
 
+struct ListNode {
+  int value;
+  ListNode* next;
+};
+
+ListNode* push_front(ListNode* head, int value) {
+  ListNode* new_node = (ListNode*) kmalloc(sizeof(head));
+  new_node->value = value;
+  new_node->next = head;
+}
+
+
 static int my_open(struct inode *i, struct file *f)
 {
   printk(KERN_INFO "Driver: open()\n");
@@ -35,15 +47,21 @@ static ssize_t my_write(struct file *f, const char __user *buf,  size_t len, lof
   return len;
 }
 
+static int my_dev_uevent(struct device *dev, struct kobj_uevent_env *env)
+{
+    add_uevent_var(env, "DEVMODE=%#o", 0666);
+    return 0;
+}
+
 static struct file_operations mychdev_fops =
 {
-  .owner = THIS_MODULE,
-  .open = my_open,
-  .release = my_close,
-  .read = my_read,
-  .write = my_write
+  .owner      = THIS_MODULE,
+  .open       = my_open,
+  .release    = my_close,
+  .read       = my_read,
+  .write      = my_write
 };
- 
+
 static int __init ch_drv_init(void)
 {
     printk(KERN_INFO "Hello!\n");
@@ -56,6 +74,9 @@ static int __init ch_drv_init(void)
 		unregister_chrdev_region(first, 1);
 		return -1;
 	  }
+
+    cl->dev_uevent = my_dev_uevent;
+
     if (device_create(cl, NULL, first, NULL, "mychdev") == NULL)
 	  {
 		class_destroy(cl);
