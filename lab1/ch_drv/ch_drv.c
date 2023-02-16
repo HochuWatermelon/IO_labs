@@ -24,6 +24,9 @@ struct ListNode* push_front(struct ListNode* head, int value) {
   return new_node;
 }
 
+static struct ListNode* list_head = NULL;
+static struct ListNode* curr = NULL; 
+
 
 static int my_open(struct inode *i, struct file *f)
 {
@@ -39,12 +42,18 @@ static int my_close(struct inode *i, struct file *f)
 
 static ssize_t my_read(struct file *f, char __user *buf, size_t len, loff_t *off)
 {
+  curr = list_head;
+  while (curr != NULL) {
+  	printk(KERN_INFO "%d, ", curr->value);
+  	curr = curr->next;
+  }
   printk(KERN_INFO "Driver: read()\n");
   return 0;
 }
 
 static ssize_t my_write(struct file *f, const char __user *buf,  size_t len, loff_t *off)
 {
+  list_head = push_front(list_head, len);
   printk(KERN_INFO "Driver: write()\n");
   return len;
 }
@@ -102,6 +111,11 @@ static void __exit ch_drv_exit(void)
     device_destroy(cl, first);
     class_destroy(cl);
     unregister_chrdev_region(first, 1);
+    while (list_head != NULL) {
+    	curr = list_head;
+    	list_head = list_head->next;
+    	kfree(curr);
+    }
     printk(KERN_INFO "Bye!!!\n");
 }
  
