@@ -41,5 +41,5 @@ insmod ch_drv.ko
 
 ## Примеры использования
 
-![image.png](./image.png)
+![image-2.png](./image-2.png)
 ![image-1.png](./image-1.png)
