@@ -7,10 +7,17 @@
 #include <linux/device.h>
 #include <linux/cdev.h>
 #include <linux/slab.h>
+#include <linux/string.h>
+#include <linux/init.h>
+#include <linux/proc_fs.h>
+#include <linux/uaccess.h>
+
 
 static dev_t first;
 static struct cdev c_dev; 
 static struct class *cl;
+#define BUF_SIZE 100
+static char buffer[BUF_SIZE];
 
 struct ListNode {
   int value;
@@ -48,11 +55,30 @@ static ssize_t my_read(struct file *f, char __user *buf, size_t len, loff_t *off
   	curr = curr->next;
   }
   printk(KERN_INFO "Driver: read()\n");
-  return 0;
+
+  int sz = strlen(buffer);
+  if (*off > 0 || len < sz)
+  {
+	return 0;
+  }
+  if (copy_to_user(buf, buffer, sz) != 0)
+  {
+	return -EFAULT;
+  }
+
+  *off = sz;
+  return sz;
 }
 
 static ssize_t my_write(struct file *f, const char __user *buf,  size_t len, loff_t *off)
 {
+  if (len >= BUF_SIZE) {
+    return -EFAULT;
+  }
+  if (copy_from_user(buffer, buf, len) != 0) {
+    return -EFAULT;
+  }
+  buffer[len] = 0;
   list_head = push_front(list_head, len);
   printk(KERN_INFO "Driver: write()\n");
   return len;
@@ -73,9 +99,9 @@ static struct file_operations mychdev_fops =
   .write      = my_write
 };
 
-static int __init ch_drv_init(void)
+static int ch_drv_init(void)
 {
-    printk(KERN_INFO "Hello!\n");
+    printk(KERN_INFO "Device: init()\n");
     if (alloc_chrdev_region(&first, 0, 1, "ch_dev") < 0)
 	  {
 		return -1;
@@ -88,7 +114,7 @@ static int __init ch_drv_init(void)
 
     cl->dev_uevent = my_dev_uevent;
 
-    if (device_create(cl, NULL, first, NULL, "mychdev") == NULL)
+    if (device_create(cl, NULL, first, NULL, "var1") == NULL)
 	  {
 		class_destroy(cl);
 		unregister_chrdev_region(first, 1);
@@ -105,7 +131,7 @@ static int __init ch_drv_init(void)
     return 0;
 }
  
-static void __exit ch_drv_exit(void)
+static void ch_drv_exit(void)
 {
     cdev_del(&c_dev);
     device_destroy(cl, first);
@@ -116,13 +142,80 @@ static void __exit ch_drv_exit(void)
     	list_head = list_head->next;
     	kfree(curr);
     }
-    printk(KERN_INFO "Bye!!!\n");
+    printk(KERN_INFO "Device: exit()\n");
+}
+
+static struct proc_dir_entry* entry;
+#define PROC_BUF_SIZE 1024
+static char proc_buf[PROC_BUF_SIZE];
+
+static ssize_t proc_write(struct file *file, const char __user * ubuf, size_t count, loff_t* ppos)
+{
+	printk(KERN_DEBUG "Attempt to write proc file");
+	return -1;
+}
+
+static ssize_t proc_read(struct file *file, char __user * ubuf, size_t count, loff_t* ppos)
+{
+    for (int i = 0; i < PROC_BUF_SIZE; i++) {
+      proc_buf[i] = 0;
+    }
+
+    curr = list_head;
+    while (curr != NULL) {
+      char mini_buf[10];
+      sprintf(mini_buf, "%d, ", curr->value);
+      strcat(proc_buf, mini_buf);
+      curr = curr->next;
+    }
+    printk(KERN_INFO "Proc: read()\n");
+
+	size_t len = strlen(proc_buf);
+	if (*ppos > 0 || count < len)
+	{
+		return 0;
+	}
+	if (copy_to_user(ubuf, proc_buf, len) != 0)
+	{
+		return -EFAULT;
+	}
+	*ppos = len;
+	return len;
+}
+
+static struct proc_ops fops = {
+	.proc_read = proc_read,
+	.proc_write = proc_write,
+};
+
+
+static int proc_example_init(void)
+{
+	entry = proc_create("var1", 0444, NULL, &fops);
+	printk(KERN_INFO "Proc: init()\n");
+	return 0;
+}
+
+static void proc_example_exit(void)
+{
+	proc_remove(entry);
+	printk(KERN_INFO "Proc: exit()\n");
+}
+
+
+static int __init drv_init(void) {
+  return ch_drv_init() || proc_example_init();
+}
+
+static void __exit drv_exit(void) {
+  ch_drv_exit();
+  proc_example_exit();
 }
  
-module_init(ch_drv_init);
-module_exit(ch_drv_exit);
+module_init(drv_init);
+module_exit(drv_exit);
  
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Author");
-MODULE_DESCRIPTION("The first kernel module");
+MODULE_AUTHOR("Selfofly");
+MODULE_DESCRIPTION("Oblepikha");
 
