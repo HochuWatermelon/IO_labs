@@ -7,16 +7,11 @@
 #include <linux/device.h>
 #include <linux/slab.h>
 #include <linux/cdev.h>
-
-#define BUF_SIZE 256
-
 static dev_t first;
 static struct cdev c_dev; 
 static struct class * cl;
 static int* numbers;
 static size_t numbers_sz;
-
-char ibuf[BUF_SIZE];
 
 
 static int my_open(struct inode *i, struct file *f)
@@ -31,8 +26,8 @@ static int my_close(struct inode *i, struct file *f)
   return 0;
 }
 
-static int copy_to_user(char __user *buf, char* ibuf, int count) {
-  printk(KERN_INFO "Driver: copy_to_user() %p %p %i\n", buf, ibuf, count);
+static int copy_to_user(char __user *buf, int count) {
+  printk(KERN_INFO "Driver: copy_to_user()\n");
   int j = 0;
   void* i;
   for (i = buf; j < count; j++) {
@@ -41,10 +36,6 @@ static int copy_to_user(char __user *buf, char* ibuf, int count) {
   i += sprintf(i, "\n");
   *((char*)i) = 0;
   printk(KERN_INFO "RESULTING STR: %d\n", numbers_sz);
-  // if (count < 256)
-  //   memcpy(ibuf, buf, count);
-  // else
-  //   memcpy(ibuf, buf, 256);
   return 0;
 }
 
@@ -63,8 +54,8 @@ static int get_sum(char* buf, int count) {
   return sum;
 }
 
-static int copy_from_user(char* ibuf, char __user *buf, int count) {
-  printk(KERN_INFO "Driver: copy_from_user() %p %p %i\n", buf, ibuf, count);
+static int copy_from_user(char __user *buf, int count) {
+  printk(KERN_INFO "Driver: copy_from_user()\n");
   int sum = get_sum(buf, count);
   numbers = krealloc(numbers, sizeof(int)*(++numbers_sz), 0);
   if (!numbers) {
@@ -72,10 +63,6 @@ static int copy_from_user(char* ibuf, char __user *buf, int count) {
     return 1;
   }
   numbers[numbers_sz-1] = sum;
-  // if (count < 256)
-  //   memcpy(ibuf, buf, count);
-  // else
-  //   memcpy(ibuf, buf, 256);
   
   return 0;
 }
@@ -90,7 +77,7 @@ static ssize_t my_read(struct file *f, char __user *buf, size_t len, loff_t *off
   }
   printk(KERN_INFO "Driver: 1\n");
 
-  if (copy_to_user(buf, ibuf, numbers_sz) != 0) {
+  if (copy_to_user(buf, numbers_sz) != 0) {
       return -EFAULT;
   }
   printk(KERN_INFO "Driver: 2\n");
@@ -105,10 +92,7 @@ static ssize_t my_write(struct file *f, const char __user *buf,  size_t len, lof
 {
   printk(KERN_INFO "Driver: write()\n");
   
-  if(len > BUF_SIZE)
-      return 0;
-  
-  if (copy_from_user(ibuf, buf, len) != 0) {
+  if (copy_from_user(buf, len) != 0) {
       return -EFAULT;
   }
   
