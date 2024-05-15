@@ -30,3 +30,4 @@ dmesg – чтение кольцевого буфера ядра.
 
 
 ## Примеры использования
+![alt text](https://github.com/HochuWatermelon/IO_labs/blob/master/lab1/Screenshot%202024-05-15%20144556.jpg)
