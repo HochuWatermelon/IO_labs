@@ -28,4 +28,5 @@ sudo rmmod virt_net_if
 ## Примеры использования
 
 ping google.com -s 65
+
 ![alt text](https://github.com/HochuWatermelon/IO_labs/blob/master/lab3/lab3_work.jpg)
